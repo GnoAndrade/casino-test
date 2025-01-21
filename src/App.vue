@@ -17,7 +17,7 @@ let fieldDefinitions = [
     type: 'Text',
     required: true,
   },
-  /* {
+  {
     id: 'options',
     label: 'Options',
       type: 'SelectUnselect',
@@ -36,7 +36,7 @@ let fieldDefinitions = [
         },
       ],
     required: true,
-  } */
+  }
 ];
 </script>
 <style scoped>
