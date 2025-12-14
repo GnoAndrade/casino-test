@@ -1,114 +1,145 @@
 <template>
-    <div class="select-unselect-container form-group">
-        <div class="container-options">
-            <span>Available Options</span>
-            <div class="column">
-                <ul class="options-list">
-                    <li v-for="option in availableOptions" :key="option.value" @click="switchOption(option, 'available')"
-                        class="option-item">
-                        {{ option.label }}
-                    </li>
-                </ul>
+    <div class="select-unselect-container">
+        <div class="options-column">
+            <h3>Available Options</h3>
+            <div class="options-box">
+                <div 
+                    v-for="option in availableOptions" 
+                    :key="option.id"
+                    class="option-item"
+                    @click="moveToDisabled(option)"
+                >
+                    {{ option.label }}
+                </div>
             </div>
         </div>
-        <div class="container-options">
-
-            <span>Disabled Options</span>
-            <div class="column">
-                <ul class="options-list">
-                    <li v-for="option in disabledOptions" :key="option.value" @click="switchOption(option, 'disabled')"
-                        class="option-item">
-                        {{ option.label }}
-                    </li>
-                </ul>
+        <div class="options-column">
+            <h3>Disabled options</h3>
+            <div class="options-box">
+                <div 
+                    v-for="option in disabledOptions" 
+                    :key="option.id"
+                    class="option-item"
+                    @click="moveToAvailable(option)"
+                >
+                    {{ option.label }}
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue';
+import fieldMixin from '../FieldMixin';
+
+const emit = defineEmits(['update']);
 
 const props = defineProps({
     field: {
         type: Object,
-        required: true
+        required: true,
     },
     modelValue: {
-        type: Array,
-        default: () => []
-    }
-})
+        type: [String, Number, Boolean, Object, Array],
+        default: () => [],
+    },
+});
 
-const emit = defineEmits(['update'])
+const availableOptions = ref([]);
+const disabledOptions = ref([]);
 
-const availableOptions = ref([...props.field.options])
-const disabledOptions = ref([])
+let { handleChange } = fieldMixin.setup(props, { emit });
 
-watch(() => props.field.options, (newOptions) => {
-    if (newOptions) {
-        availableOptions.value = [...newOptions]
-        disabledOptions.value = []
-    }
-}, { immediate: true })
+// Initialize options
+const initializeOptions = () => {
+    const allOptions = props.field.options || [];
+    const selectedIds = Array.isArray(props.modelValue) ? props.modelValue : [];
+    
+    availableOptions.value = allOptions.filter(opt => !selectedIds.includes(opt.id));
+    disabledOptions.value = allOptions.filter(opt => selectedIds.includes(opt.id));
+};
 
-const switchOption = (option, fromList) => {
-    if (fromList === 'available') {
-        availableOptions.value = availableOptions.value.filter(opt => opt.label !== option.label)
-        disabledOptions.value.push(option)
-    } else {
-        disabledOptions.value = disabledOptions.value.filter(opt => opt.label !== option.label)
-        availableOptions.value.push(option)
-    }
-    sendParent()
-}
+onMounted(() => {
+    initializeOptions();
+});
 
-const sendParent = () => {
+watch(() => props.modelValue, () => {
+    initializeOptions();
+});
+
+const moveToDisabled = (option) => {
+    availableOptions.value = availableOptions.value.filter(opt => opt.id !== option.id);
+    disabledOptions.value.push(option);
+    updateValue();
+};
+
+const moveToAvailable = (option) => {
+    disabledOptions.value = disabledOptions.value.filter(opt => opt.id !== option.id);
+    availableOptions.value.push(option);
+    updateValue();
+};
+
+const updateValue = () => {
+    const selectedIds = disabledOptions.value.map(opt => opt.id);
     emit('update', {
         id: props.field.id,
-        value: disabledOptions.value.map(el => el.id)
-        
-    })
-}
+        value: selectedIds
+    });
+};
+
+const setSelected = (value) => {
+    // This method is called by parent component if needed
+    initializeOptions();
+};
+
+defineExpose({
+    setSelected
+});
 </script>
 
 <style scoped>
 .select-unselect-container {
     display: flex;
-    align-items: center;
     gap: 20px;
-    width: 100%;}
-
-.container-options {
-    display: flex;
-    flex-direction: column;
-    width: 50%;
+    width: 100%;
+    justify-content: space-between;
 }
 
-.column {
-    border: 1px solid #ccc;
+.options-column {
+    flex: 1;
+    text-align: center;
+}
+
+.options-column h3 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    color: rgba(255, 255, 255, 0.87);
+}
+
+.options-box {
+    border: 1px solid #444;
+    background: #1a1a1a;
+    min-height: 200px;
     padding: 10px;
     border-radius: 4px;
-    height: 150px;
-    overflow-y: auto;
-}
-
-h3 {
-    margin: 0;
-    font-size: 16px;
-}
-
-.options-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    min-height: 100px;
     text-align: left;
 }
 
 .option-item {
-    padding-bottom: 4px;
-    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 5px;
     cursor: pointer;
+    background: #2a2a2a;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.option-item:hover {
+    background: #3a3a3a;
+}
+
+.option-item:last-child {
+    margin-bottom: 0;
 }
 </style>
