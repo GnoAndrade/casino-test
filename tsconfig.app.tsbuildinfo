@@ -1,0 +1,1 @@
+{"root":["./src/main.ts","./src/vite-env.d.ts","./src/App.vue","./src/components/FormComponent.vue","./src/components/fields/SelectUnselectField.vue","./src/components/fields/TextField.vue","./src/components/fields/TextareaField.vue"],"errors":true,"version":"5.6.2"}
